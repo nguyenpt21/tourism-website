@@ -1,0 +1,80 @@
+import ReviewModal from "./ReviewModal";
+import React, { useState, useEffect } from "react";
+import dayjs from "dayjs";
+import { CLOUDINARY_BASE_URL } from "../constants/hotel";
+import { useAddReviewMutation } from "../redux/api/reviewApiSlice";
+import { IoTicketSharp } from "react-icons/io5";
+import { toast } from "react-toastify";
+const TourReviewCard = ({ userId, booking, modalKey, setModalKey, refetch}) => {
+    const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+
+    const [addReview, { isLoading: isAddingReview }] = useAddReviewMutation();
+
+    const handleOpenReviewModal = () => {
+        setIsReviewModalOpen(true);
+        setModalKey((prevKey) => prevKey + 1);
+    };
+    const handleCloseReviewModal = () => {
+        setIsReviewModalOpen(false);
+    };
+
+    const handleAddReview = async (review) => {
+        const reviewData = {
+            userId,
+            ...review,
+            productId: booking.tourId,
+            productType: "Tour",
+            bookingId: booking._id,
+        };
+        try {
+            const res = await addReview(reviewData).unwrap();
+            console.log("Review added successfully:", res);
+            toast.success("Thêm review thành công");
+            refetch()
+        } catch (error) {
+            console.error("Error adding review:", error);
+            toast.error("Thêm review thất bại");
+        }
+        handleCloseReviewModal();
+    };
+    return (
+        <div className="bg-white rounded-md py-4 px-8 hover:shadow-lg duration-300 flex mb-6">
+            <div className="flex items-start mb-4 flex-1">
+                <IoTicketSharp className="text-[18px] mr-2 mt-2 text-blue-400" />
+                <div>
+                    <p className="font-semibold text-[18px]">
+                        {booking.tourName}
+                    </p>
+                    <p className="text-gray-500 text-sm">
+                        {dayjs(booking.useDate).format("DD/MM/YYYY")}
+                    </p>
+                    <div className="mt-4">
+                        <button
+                            onClick={() => handleOpenReviewModal()}
+                            className="text-orange-600 text-[14px] font-medium mt-2 bg-orange-100 border-2 border-orange-400 px-3 py-1 rounded-md hover:bg-orange-200 transition-colors duration-200"
+                        >
+                            Viết đánh giá
+                        </button>
+                    </div>
+
+                    <ReviewModal
+                        visible={isReviewModalOpen}
+                        onCancel={handleCloseReviewModal}
+                        onAddReview={handleAddReview}
+                        key={modalKey}
+                        isLoading={isAddingReview}
+                    />
+                </div>
+            </div>
+            <div className="rounded-xl overflow-hidden h-[100px] w-[140px]">
+                <img
+                    src={`${CLOUDINARY_BASE_URL}/${booking.tourImg[0]}`}
+                    alt=""
+                    className="w-full h-full object-cover"
+                />
+            </div>
+        </div>
+    );
+};
+
+export default TourReviewCard;
